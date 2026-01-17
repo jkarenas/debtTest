@@ -125,49 +125,52 @@ export class DebtsService {
     await this.redisService.deletePattern(`user_debts:${userId}:*`);
   }
 
-  async getUserDebtsSummary(userId: string) {
-    const cacheKey = `user_summary:${userId}`;
-    
-    const cached = await this.redisService.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
-    }
-
-    const [pending, paid] = await Promise.all([
-      this.debtRepository
-        .createQueryBuilder('debt')
-        .select('COUNT(debt.id)', 'count')
-        .addSelect('COALESCE(SUM(debt.amount), 0)', 'total')
-        .where('debt.user.id = :userId AND debt.status = :status', {
-          userId,
-          status: DebtStatus.PENDING,
-        })
-        .getRawOne(),
-      this.debtRepository
-        .createQueryBuilder('debt')
-        .select('COUNT(debt.id)', 'count')
-        .addSelect('COALESCE(SUM(debt.amount), 0)', 'total')
-        .where('debt.user.id = :userId AND debt.status = :status', {
-          userId,
-          status: DebtStatus.PAID,
-        })
-        .getRawOne(),
-    ]);
-
-    const summary = {
-      pending: {
-        count: parseInt(pending.count),
-        total: parseFloat(pending.total),
-      },
-      paid: {
-        count: parseInt(paid.count),
-        total: parseFloat(paid.total),
-      },
-    };
-
-    // Cachear por 2 minutos
-    await this.redisService.set(cacheKey, JSON.stringify(summary), 120);
-
-    return summary;
+async getUserDebtsSummary(userId: string) {
+  const cacheKey = `user_summary:${userId}`;
+  
+  const cached = await this.redisService.get(cacheKey);
+  if (cached) {
+    return JSON.parse(cached);
   }
+
+  const [pending, paid] = await Promise.all([
+    this.debtRepository
+      .createQueryBuilder('debt')
+      .select('COUNT(debt.id)', 'count')
+      .addSelect('COALESCE(SUM(debt.amount), 0)', 'total')
+      .where('debt.user.id = :userId AND debt.status = :status', {
+        userId,
+        status: DebtStatus.PENDING,
+      })
+      .getRawOne(),
+    this.debtRepository
+      .createQueryBuilder('debt')
+      .select('COUNT(debt.id)', 'count')
+      .addSelect('COALESCE(SUM(debt.amount), 0)', 'total')
+      .where('debt.user.id = :userId AND debt.status = :status', {
+        userId,
+        status: DebtStatus.PAID,
+      })
+      .getRawOne(),
+  ]);
+
+  const pendingCount = parseInt(pending.count) || 0;
+  const paidCount = parseInt(paid.count) || 0;
+  const pendingTotal = parseFloat(pending.total) || 0;
+  const paidTotal = parseFloat(paid.total) || 0;
+
+  const summary = {
+    totalDebts: pendingCount + paidCount,
+    pendingDebts: pendingCount,
+    paidDebts: paidCount,
+    totalAmount: pendingTotal + paidTotal,
+    pendingAmount: pendingTotal,
+    paidAmount: paidTotal,
+  };
+
+  // Cachear por 2 minutos
+  await this.redisService.set(cacheKey, JSON.stringify(summary), 120);
+
+  return summary;
+}
 }
