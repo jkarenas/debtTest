@@ -6,11 +6,13 @@ import { RedisService } from './config/redis.service';
 import { TestEntity } from './test.entity';
 import { DebtsModule } from './debts/debts.module';
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
     UsersModule,
     DebtsModule,
+    AuthModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
