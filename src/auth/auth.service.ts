@@ -40,6 +40,7 @@ export class AuthService {
     return this.signToken(user.id, user.email);
   }
 
+ 
   private signToken(userId: string, email: string) {
     return {
       access_token: this.jwtService.sign({
