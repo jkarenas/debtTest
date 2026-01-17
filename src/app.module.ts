@@ -4,10 +4,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
 import { RedisService } from './config/redis.service';
 import { TestEntity } from './test.entity';
-
+import { DebtsModule } from './debts/debts.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
+    UsersModule,
+    DebtsModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
